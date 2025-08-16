@@ -105,10 +105,8 @@ class BrowserDepthCutter {
           resultCanvas = this.imageProcessor.addBorder(resultCanvas, this.borderWidth);
         }
         
-        // 生成文件名
-        const baseName = this.getBaseName(imageFile.name);
-        const borderSuffix = this.borderWidth > 0 ? `_border_${this.borderWidth}px` : '';
-        const filename = `${baseName}_layer_${i + 1}_depth_${range.min}-${range.max}${borderSuffix}.png`;
+        // 生成文件名 - 使用简单的数字序列格式
+        const filename = `${String(i).padStart(4, '0')}.png`;
         
         // 转换为Data URL和Blob
         const dataUrl = this.imageProcessor.canvasToDataUrl(resultCanvas);
