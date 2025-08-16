@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DepthCut Frontend - 纯前端深度图像切分工具</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">
+                    <span class="icon">🎨</span>
+                    DepthCut Frontend
+                    <span class="version">v2.0.0</span>
+                </h1>
+                <p class="subtitle">纯前端深度图像切分工具 - 无需服务器，数据不上传</p>
+            </div>
+        </header>
+
+        <!-- API配置区域 -->
+        <section class="api-config-section">
+            <div class="api-config-container">
+                <h2>🔑 API配置</h2>
+                <div class="api-input-group">
+                    <label for="replicateApiKey">Replicate API Token</label>
+                    <div class="api-input-container">
+                        <input type="password" id="replicateApiKey" placeholder="请输入您的Replicate API Token" class="api-input">
+                        <button type="button" id="toggleApiKey" class="toggle-btn">👁️</button>
+                    </div>
+                    <div class="api-help">
+                        <p>🔗 <a href="https://replicate.com/account/api-tokens" target="_blank">获取API Token</a> | 
+                           📖 <a href="#" onclick="showApiHelp()">配置说明</a></p>
+                        <div class="api-status" id="apiStatus">
+                            <span class="status-indicator offline"></span>
+                            <span class="status-text">未配置</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 主要内容 -->
+        <main class="main">
+            <!-- 功能选择 -->
+            <section class="mode-selection">
+                <h2>选择处理模式</h2>
+                <div class="mode-buttons">
+                    <button id="autoMode" class="mode-btn active" data-mode="auto">
+                        <span class="mode-icon">🤖</span>
+                        <span class="mode-title">自动模式</span>
+                        <span class="mode-desc">AI自动生成深度图并切分</span>
+                    </button>
+                    <button id="manualMode" class="mode-btn" data-mode="manual">
+                        <span class="mode-icon">👤</span>
+                        <span class="mode-title">手动模式</span>
+                        <span class="mode-desc">使用现有深度图进行切分</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 上传区域 -->
+            <section class="upload-section">
+                <div class="upload-container">
+                    <!-- 原始图片上传 -->
+                    <div class="upload-area" id="imageUpload">
+                        <div class="upload-content">
+                            <div class="upload-icon">📸</div>
+                            <h3>上传原始图片</h3>
+                            <p>支持 JPG, PNG, BMP, WebP 格式，最大 10MB</p>
+                            <input type="file" id="imageFile" accept="image/*" hidden>
+                            <button class="upload-btn" onclick="document.getElementById('imageFile').click()">
+                                选择图片
+                            </button>
+                        </div>
+                        <div class="upload-preview" id="imagePreview" style="display: none;">
+                            <img id="imagePreviewImg" alt="原始图片预览">
+                            <div class="preview-info">
+                                <span id="imageFileName"></span>
+                                <button class="remove-btn" onclick="removeImage()">×</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 深度图上传（手动模式） -->
+                    <div class="upload-area" id="depthUpload" style="display: none;">
+                        <div class="upload-content">
+                            <div class="upload-icon">🗺️</div>
+                            <h3>上传深度图</h3>
+                            <p>灰度图，黑色=远，白色=近</p>
+                            <input type="file" id="depthFile" accept="image/*" hidden>
+                            <button class="upload-btn" onclick="document.getElementById('depthFile').click()">
+                                选择深度图
+                            </button>
+                        </div>
+                        <div class="upload-preview" id="depthPreview" style="display: none;">
+                            <img id="depthPreviewImg" alt="深度图预览">
+                            <div class="preview-info">
+                                <span id="depthFileName"></span>
+                                <button class="remove-btn" onclick="removeDepth()">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 设置区域 -->
+            <section class="settings-section">
+                <h2>处理设置</h2>
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label for="layerCount">层级数量</label>
+                        <div class="slider-container">
+                            <input type="range" id="layerCount" min="1" max="32" value="8" class="slider">
+                            <span class="slider-value" id="layerValue">8</span>
+                        </div>
+                        <div class="slider-labels">
+                            <span>1层</span>
+                            <span>32层</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="depthOverlap">深度冗余</label>
+                        <div class="number-input-container">
+                            <input type="number" id="depthOverlap" min="0" max="50" value="1" class="number-input">
+                            <span class="input-unit">单位</span>
+                        </div>
+                        <div class="setting-help">
+                            <span>相邻层级的重叠范围，增加过渡效果</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>预设配置</label>
+                        <div class="preset-buttons">
+                            <button class="preset-btn" onclick="setLayers(4)">快速 (4层)</button>
+                            <button class="preset-btn active" onclick="setLayers(8)">标准 (8层)</button>
+                            <button class="preset-btn" onclick="setLayers(16)">精细 (16层)</button>
+                            <button class="preset-btn" onclick="setLayers(32)">极致 (32层)</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 处理按钮 -->
+            <section class="process-section">
+                <button id="processBtn" class="process-btn" disabled>
+                    <span class="btn-icon">🚀</span>
+                    <span class="btn-text">开始处理</span>
+                </button>
+                <div class="process-info">
+                    <p id="processStatus">请配置API Token并上传图片</p>
+                </div>
+            </section>
+
+            <!-- 进度显示 -->
+            <section class="progress-section" id="progressSection" style="display: none;">
+                <div class="progress-container">
+                    <div class="progress-header">
+                        <h3>处理进度</h3>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-steps">
+                        <div class="step" id="step1">
+                            <span class="step-icon">📤</span>
+                            <span class="step-text">准备图片</span>
+                        </div>
+                        <div class="step" id="step2">
+                            <span class="step-icon">🧠</span>
+                            <span class="step-text">生成深度图</span>
+                        </div>
+                        <div class="step" id="step3">
+                            <span class="step-icon">✂️</span>
+                            <span class="step-text">切分层级</span>
+                        </div>
+                        <div class="step" id="step4">
+                            <span class="step-icon">✅</span>
+                            <span class="step-text">处理完成</span>
+                        </div>
+                    </div>
+                    <div class="progress-details" id="progressDetails">
+                        准备开始处理...
+                    </div>
+                </div>
+            </section>
+
+            <!-- 结果显示 -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-container">
+                    <div class="results-header">
+                        <h3>处理结果</h3>
+                        <div class="results-stats">
+                            <span id="resultLayers">0</span> 个层级文件
+                            <span id="resultTime">0</span> 秒
+                        </div>
+                    </div>
+                    
+                    <!-- 深度图预览（自动模式） -->
+                    <div class="depth-preview" id="depthResult" style="display: none;">
+                        <h4>生成的深度图</h4>
+                        <div class="depth-comparison">
+                            <div class="comparison-item">
+                                <img id="originalResult" alt="原始图片">
+                                <span>原始图片</span>
+                            </div>
+                            <div class="comparison-item">
+                                <img id="depthResultImg" alt="深度图">
+                                <span>深度图</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 层级文件列表 -->
+                    <div class="layer-files">
+                        <h4>层级文件</h4>
+                        <div class="files-grid" id="filesGrid">
+                            <!-- 动态生成文件项 -->
+                        </div>
+                    </div>
+
+                    <!-- 下载按钮 -->
+                    <div class="download-actions">
+                        <button class="download-btn" id="downloadAllBtn" onclick="downloadAllFiles()">
+                            <span class="btn-icon">📦</span>
+                            下载所有文件
+                        </button>
+                        <button class="reset-btn" onclick="resetForm()">
+                            <span class="btn-icon">🔄</span>
+                            重新开始
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部信息 -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="#" onclick="showHelp()">使用帮助</a>
+                    <a href="#" onclick="showAbout()">关于项目</a>
+                    <a href="https://github.com/your-repo/DepthCut" target="_blank">GitHub</a>
+                </div>
+                <div class="footer-info">
+                    <p>© 2024 DepthCut Frontend - 纯前端深度图像处理工具</p>
+                    <p>基于 Replicate API 和 Canvas API 构建</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- API配置帮助模态框 -->
+    <div class="modal" id="apiHelpModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>API配置说明</h3>
+                <button class="modal-close" onclick="closeModal('apiHelpModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <h4>🔑 获取Replicate API Token</h4>
+                <ol>
+                    <li>访问 <a href="https://replicate.com/account/api-tokens" target="_blank">Replicate API Tokens页面</a></li>
+                    <li>登录或注册Replicate账户</li>
+                    <li>点击"Create token"创建新的API Token</li>
+                    <li>复制生成的Token并粘贴到上方输入框</li>
+                </ol>
+                
+                <h4>🔒 隐私说明</h4>
+                <ul>
+                    <li>API Token仅存储在您的浏览器本地</li>
+                    <li>图片处理完全在浏览器中进行</li>
+                    <li>只有深度图生成需要调用Replicate API</li>
+                    <li>您的图片数据不会上传到我们的服务器</li>
+                </ul>
+                
+                <h4>💰 费用说明</h4>
+                <p>Replicate API按使用量计费，深度图生成大约每次$0.01-0.05。具体费用请查看Replicate官网。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 帮助模态框 -->
+    <div class="modal" id="helpModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>使用帮助</h3>
+                <button class="modal-close" onclick="closeModal('helpModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <h4>🚀 快速开始</h4>
+                <ol>
+                    <li>配置Replicate API Token</li>
+                    <li>选择处理模式（自动/手动）</li>
+                    <li>上传图片文件</li>
+                    <li>设置层级数量</li>
+                    <li>点击开始处理</li>
+                </ol>
+                
+                <h4>🤖 自动模式</h4>
+                <p>上传原始图片，AI自动生成深度图并进行层级切分。适合没有深度图的用户。</p>
+                
+                <h4>👤 手动模式</h4>
+                <p>需要同时上传原始图片和对应的深度图。深度图应为灰度图，黑色表示远处，白色表示近处。</p>
+                
+                <h4>⚙️ 层级设置</h4>
+                <ul>
+                    <li><strong>4层</strong>: 快速处理，适合预览</li>
+                    <li><strong>8层</strong>: 标准处理，平衡质量和速度</li>
+                    <li><strong>16层</strong>: 精细处理，高质量结果</li>
+                    <li><strong>32层</strong>: 极致处理，最高质量</li>
+                </ul>
+                
+                <h4>📁 输出文件</h4>
+                <p>生成的PNG文件带有透明通道，可用于图像合成、游戏开发、AR/VR等场景。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关于模态框 -->
+    <div class="modal" id="aboutModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>关于 DepthCut Frontend</h3>
+                <button class="modal-close" onclick="closeModal('aboutModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>DepthCut Frontend</strong> 是一个纯前端深度图像切分工具，能够将图片按深度信息切分成多个透明PNG层级。</p>
+                
+                <h4>🚀 主要特性</h4>
+                <ul>
+                    <li>纯前端处理，无需服务器</li>
+                    <li>AI自动深度图生成（基于 Replicate API）</li>
+                    <li>可配置层级数量（1-32层）</li>
+                    <li>Canvas高性能处理</li>
+                    <li>支持多种图片格式</li>
+                    <li>数据隐私保护</li>
+                </ul>
+                
+                <h4>🛠️ 技术栈</h4>
+                <ul>
+                    <li>前端: HTML5 + CSS3 + JavaScript</li>
+                    <li>图像处理: Canvas API</li>
+                    <li>AI模型: Replicate depth-anything-v2</li>
+                    <li>部署: 静态网站托管</li>
+                </ul>
+                
+                <h4>🔒 隐私保护</h4>
+                <ul>
+                    <li>图片处理完全在浏览器本地进行</li>
+                    <li>API Token仅存储在浏览器本地</li>
+                    <li>不上传任何数据到第三方服务器</li>
+                </ul>
+                
+                <h4>📄 开源协议</h4>
+                <p>MIT License - 欢迎贡献代码和反馈问题</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入核心模块 -->
+    <script src="js/image-processor.js"></script>
+    <script src="js/depth-generator.js"></script>
+    <script src="js/depth-cutter.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- 可选：JSZip库用于批量下载 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</body>
+</html>
