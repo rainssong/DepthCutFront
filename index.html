@@ -133,6 +133,20 @@
                         </div>
                     </div>
                     <div class="setting-item">
+                        <label for="borderWidth">边框粗细</label>
+                        <div class="slider-container">
+                            <input type="range" id="borderWidth" min="0" max="20" value="0" class="slider">
+                            <span class="slider-value" id="borderValue">0</span>
+                        </div>
+                        <div class="slider-labels">
+                            <span>0像素</span>
+                            <span>20像素</span>
+                        </div>
+                        <div class="setting-help">
+                            <span>为导出图片添加黑色边框（向外扩展）</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
                         <label>预设配置</label>
                         <div class="preset-buttons">
                             <button class="preset-btn" onclick="setLayers(4)">快速 (4层)</button>

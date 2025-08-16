@@ -4,9 +4,10 @@
  */
 
 class BrowserDepthCutter {
-  constructor(layerCount = 8, depthOverlap = 1) {
+  constructor(layerCount = 8, depthOverlap = 1, borderWidth = 0) {
     this.layerCount = layerCount;
     this.depthOverlap = depthOverlap;
+    this.borderWidth = borderWidth;
     this.depthRanges = this.generateDepthRanges(layerCount, depthOverlap);
     this.imageProcessor = new BrowserImageProcessor();
     this.results = [];
@@ -96,11 +97,18 @@ class BrowserDepthCutter {
         
         // 按深度范围切分
         console.log(`层级 ${i + 1}: 深度 ${range.min}~${range.max}`);
-        const resultCanvas = this.imageProcessor.cutByDepthRange(originalImg, depthData, range.min, range.max);
+        let resultCanvas = this.imageProcessor.cutByDepthRange(originalImg, depthData, range.min, range.max);
+        
+        // 添加边框（如果设置了边框宽度）
+        if (this.borderWidth > 0) {
+          console.log(`添加 ${this.borderWidth}px 边框到层级 ${i + 1}`);
+          resultCanvas = this.imageProcessor.addBorder(resultCanvas, this.borderWidth);
+        }
         
         // 生成文件名
         const baseName = this.getBaseName(imageFile.name);
-        const filename = `${baseName}_layer_${i + 1}_depth_${range.min}-${range.max}.png`;
+        const borderSuffix = this.borderWidth > 0 ? `_border_${this.borderWidth}px` : '';
+        const filename = `${baseName}_layer_${i + 1}_depth_${range.min}-${range.max}${borderSuffix}.png`;
         
         // 转换为Data URL和Blob
         const dataUrl = this.imageProcessor.canvasToDataUrl(resultCanvas);

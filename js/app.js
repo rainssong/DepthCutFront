@@ -70,6 +70,12 @@ class DepthCutFrontendApp {
       this.updateLayerValue(e.target.value);
     });
 
+    // 边框滑块
+    const borderSlider = document.getElementById('borderWidth');
+    borderSlider.addEventListener('input', (e) => {
+      this.updateBorderValue(e.target.value);
+    });
+
     // 处理按钮
     document.getElementById('processBtn').addEventListener('click', () => {
       this.startProcessing();
@@ -346,6 +352,14 @@ class DepthCutFrontendApp {
   }
 
   /**
+   * 更新边框值显示
+   * @param {string} value 边框值
+   */
+  updateBorderValue(value) {
+    document.getElementById('borderValue').textContent = value;
+  }
+
+  /**
    * 设置层级数量
    * @param {number} count 层级数量
    */
@@ -438,6 +452,7 @@ class DepthCutFrontendApp {
   async processAuto() {
     const layers = parseInt(document.getElementById('layerCount').value);
     const depthOverlap = parseInt(document.getElementById('depthOverlap').value);
+    const borderWidth = parseInt(document.getElementById('borderWidth').value);
     
     // 步骤1: 生成深度图
     this.updateProgress(10, 1, '生成深度图...');
@@ -456,7 +471,7 @@ class DepthCutFrontendApp {
     // 步骤2: 处理层级切分
     this.updateProgress(60, 2, '开始层级切分...');
     
-    this.depthCutter = new BrowserDepthCutter(layers, depthOverlap);
+    this.depthCutter = new BrowserDepthCutter(layers, depthOverlap, borderWidth);
     this.currentResults = await this.depthCutter.process(
       this.files.image,
       depthImageUrl,
@@ -480,6 +495,7 @@ class DepthCutFrontendApp {
   async processManual() {
     const layers = parseInt(document.getElementById('layerCount').value);
     const depthOverlap = parseInt(document.getElementById('depthOverlap').value);
+    const borderWidth = parseInt(document.getElementById('borderWidth').value);
     
     // 显示深度图对比
     this.updateProgress(20, 1, '准备图像...');
@@ -488,7 +504,7 @@ class DepthCutFrontendApp {
     // 处理层级切分
     this.updateProgress(40, 2, '开始层级切分...');
     
-    this.depthCutter = new BrowserDepthCutter(layers, depthOverlap);
+    this.depthCutter = new BrowserDepthCutter(layers, depthOverlap, borderWidth);
     this.currentResults = await this.depthCutter.process(
       this.files.image,
       this.files.depth,

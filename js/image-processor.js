@@ -366,6 +366,42 @@ class BrowserImageProcessor {
       console.log('⚠️  尺寸不匹配，将自动调整');
     }
   }
+
+  /**
+   * 为Canvas添加边框
+   * @param {HTMLCanvasElement} canvas 原始Canvas
+   * @param {number} borderWidth 边框宽度（像素）
+   * @param {string} borderColor 边框颜色
+   * @returns {HTMLCanvasElement} 带边框的Canvas
+   */
+  addBorder(canvas, borderWidth, borderColor = '#000000') {
+    if (borderWidth <= 0) {
+      return canvas;
+    }
+
+    const newWidth = canvas.width + borderWidth * 2;
+    const newHeight = canvas.height + borderWidth * 2;
+    const newCanvas = this.createCanvas(newWidth, newHeight);
+    const ctx = newCanvas.getContext('2d');
+
+    // 设置边框颜色
+    ctx.fillStyle = borderColor;
+
+    // 绘制四个边框矩形，而不是填充整个背景
+    // 上边框
+    ctx.fillRect(0, 0, newWidth, borderWidth);
+    // 下边框
+    ctx.fillRect(0, newHeight - borderWidth, newWidth, borderWidth);
+    // 左边框
+    ctx.fillRect(0, borderWidth, borderWidth, canvas.height);
+    // 右边框
+    ctx.fillRect(newWidth - borderWidth, borderWidth, borderWidth, canvas.height);
+
+    // 在中心绘制原始图像（保持透明度）
+    ctx.drawImage(canvas, borderWidth, borderWidth);
+
+    return newCanvas;
+  }
 }
 
 // 导出类
