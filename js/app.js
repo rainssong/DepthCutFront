@@ -5,7 +5,7 @@
 
 class DepthCutFrontendApp {
   constructor() {
-    this.currentMode = 'auto';
+    this.currentMode = 'manual'; // 固定为手动模式
     this.files = {
       image: null,
       depth: null
@@ -16,6 +16,7 @@ class DepthCutFrontendApp {
     this.currentResults = null;
     this.processingStartTime = null;
     this.threeDPreview = null;
+    this.isGeneratingDepth = false; // AI生成深度图状态
     
     this.init();
   }
@@ -47,12 +48,13 @@ class DepthCutFrontendApp {
       this.toggleApiKeyVisibility();
     });
 
-    // 模式切换
-    document.querySelectorAll('.mode-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        this.switchMode(e.target.closest('.mode-btn').dataset.mode);
+    // AI生成深度图按钮
+    const aiGenerateBtn = document.getElementById('aiGenerateBtn');
+    if (aiGenerateBtn) {
+      aiGenerateBtn.addEventListener('click', () => {
+        this.generateDepthWithAI();
       });
-    });
+    }
 
     // 文件上传
     document.getElementById('imageFile').addEventListener('change', (e) => {
@@ -239,23 +241,75 @@ class DepthCutFrontendApp {
   }
 
   /**
-   * 切换模式
-   * @param {string} mode 模式：auto/manual
+   * AI生成深度图
    */
-  switchMode(mode) {
-    this.currentMode = mode;
-    
-    // 更新按钮状态
-    document.querySelectorAll('.mode-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.mode === mode);
-    });
+  async generateDepthWithAI() {
+    if (!this.files.image) {
+      this.showError('请先上传原始图片');
+      return;
+    }
 
-    // 显示/隐藏深度图上传区域
-    const depthUpload = document.getElementById('depthUpload');
-    depthUpload.style.display = mode === 'manual' ? 'flex' : 'none';
+    if (!this.apiToken || !this.depthGenerator) {
+      this.showError('请先配置有效的Replicate API Token');
+      return;
+    }
 
-    this.updateProcessButton();
-    console.log(`Switched to ${mode} mode`);
+    if (this.isGeneratingDepth) {
+      return; // 防止重复点击
+    }
+
+    try {
+      this.isGeneratingDepth = true;
+      this.updateAIGenerateButton(true);
+
+      console.log('🚀 开始AI生成深度图...');
+      
+      const depthImageUrl = await this.depthGenerator.generateDepthMap(
+        this.files.image,
+        (progress, message) => {
+          console.log(`AI生成进度: ${progress}% - ${message}`);
+        }
+      );
+
+      // 将生成的深度图设置为深度图文件
+      const response = await fetch(depthImageUrl);
+      const blob = await response.blob();
+      const file = new File([blob], 'ai_generated_depth.png', { type: 'image/png' });
+      
+      this.files.depth = file;
+      this.showImagePreview(file, 'depthPreview', 'depthPreviewImg', 'depthFileName');
+      this.updateProcessButton();
+      
+      console.log('✅ AI深度图生成完成');
+      
+    } catch (error) {
+      console.error('❌ AI深度图生成失败:', error);
+      this.showError(`AI生成深度图失败: ${error.message}`);
+    } finally {
+      this.isGeneratingDepth = false;
+      this.updateAIGenerateButton(false);
+    }
+  }
+
+  /**
+   * 更新AI生成按钮状态
+   * @param {boolean} isLoading 是否正在加载
+   */
+  updateAIGenerateButton(isLoading) {
+    const btn = document.getElementById('aiGenerateBtn');
+    if (!btn) return;
+
+    if (isLoading) {
+      btn.classList.add('loading');
+      btn.disabled = true;
+      btn.querySelector('.btn-icon').textContent = '⏳';
+      btn.querySelector('.btn-text').textContent = '生成中...';
+    } else {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      btn.querySelector('.btn-icon').textContent = '🤖';
+      btn.querySelector('.btn-text').textContent = 'AI生成深度图';
+    }
   }
 
   /**
@@ -394,31 +448,27 @@ class DepthCutFrontendApp {
   updateProcessButton() {
     const processBtn = document.getElementById('processBtn');
     const processStatus = document.getElementById('processStatus');
+    const aiGenerateBtn = document.getElementById('aiGenerateBtn');
     
     let canProcess = false;
     let statusText = '';
 
-    // 检查API Token
-    if (!this.apiToken && this.currentMode === 'auto') {
-      statusText = '请先配置Replicate API Token';
-    } else if (this.currentMode === 'auto') {
-      canProcess = !!this.files.image && !!this.depthGenerator;
-      statusText = !this.files.image ? 
-        '请上传原始图片' : 
-        !this.depthGenerator ?
-          'API Token验证中...' :
-          '准备就绪，点击开始处理';
-    } else {
-      canProcess = !!(this.files.image && this.files.depth);
-      statusText = !this.files.image ? 
-        '请上传原始图片' : 
-        !this.files.depth ? 
-          '请上传深度图' : 
-          '准备就绪，点击开始处理';
-    }
+    // 手动模式逻辑
+    canProcess = !!(this.files.image && this.files.depth);
+    statusText = !this.files.image ?
+      '请上传原始图片' :
+      !this.files.depth ?
+        '请上传深度图或使用AI生成' :
+        '准备就绪，点击开始处理';
 
     processBtn.disabled = !canProcess;
     processStatus.textContent = statusText;
+
+    // 更新AI生成按钮状态
+    if (aiGenerateBtn) {
+      const canGenerateAI = !!(this.files.image && this.apiToken && this.depthGenerator && !this.isGeneratingDepth);
+      aiGenerateBtn.disabled = !canGenerateAI;
+    }
   }
 
   /**
@@ -431,11 +481,8 @@ class DepthCutFrontendApp {
     this.showProgress();
     
     try {
-      if (this.currentMode === 'auto') {
-        await this.processAuto();
-      } else {
-        await this.processManual();
-      }
+      // 固定使用手动模式处理
+      await this.processManual();
     } catch (error) {
       console.error('Processing failed:', error);
       this.showError(error.message);
@@ -453,61 +500,14 @@ class DepthCutFrontendApp {
       return false;
     }
 
-    if (this.currentMode === 'auto' && !this.depthGenerator) {
-      this.showError('请先配置有效的Replicate API Token');
-      return false;
-    }
-
-    if (this.currentMode === 'manual' && !this.files.depth) {
-      this.showError('手动模式需要上传深度图');
+    if (!this.files.depth) {
+      this.showError('请上传深度图或使用AI生成深度图');
       return false;
     }
 
     return true;
   }
 
-  /**
-   * 自动模式处理
-   */
-  async processAuto() {
-    const layers = parseInt(document.getElementById('layerCount').value);
-    const depthOverlap = parseInt(document.getElementById('depthOverlap').value);
-    const borderWidth = parseInt(document.getElementById('borderWidth').value);
-    
-    // 步骤1: 生成深度图
-    this.updateProgress(10, 1, '生成深度图...');
-    
-    const depthImageUrl = await this.depthGenerator.generateDepthMap(
-      this.files.image,
-      (progress, message) => {
-        const adjustedProgress = 10 + (progress * 0.4); // 10-50%
-        this.updateProgress(adjustedProgress, 1, message);
-      }
-    );
-    
-    // 显示生成的深度图
-    this.showDepthResult(this.files.image, depthImageUrl);
-    
-    // 步骤2: 处理层级切分
-    this.updateProgress(60, 2, '开始层级切分...');
-    
-    this.depthCutter = new BrowserDepthCutter(layers, depthOverlap, borderWidth);
-    this.currentResults = await this.depthCutter.process(
-      this.files.image,
-      depthImageUrl,
-      (progress, message) => {
-        const adjustedProgress = 60 + (progress * 0.3); // 60-90%
-        this.updateProgress(adjustedProgress, 2, message);
-      }
-    );
-    
-    // 步骤3: 完成
-    this.updateProgress(100, 3, '处理完成！');
-    
-    setTimeout(() => {
-      this.showResults();
-    }, 1000);
-  }
 
   /**
    * 手动模式处理
@@ -517,9 +517,8 @@ class DepthCutFrontendApp {
     const depthOverlap = parseInt(document.getElementById('depthOverlap').value);
     const borderWidth = parseInt(document.getElementById('borderWidth').value);
     
-    // 显示深度图对比
+    // 准备图像
     this.updateProgress(20, 1, '准备图像...');
-    this.showManualDepthResult();
     
     // 处理层级切分
     this.updateProgress(40, 2, '开始层级切分...');
@@ -580,53 +579,6 @@ class DepthCutFrontendApp {
     });
   }
 
-  /**
-   * 显示深度图结果（自动模式）
-   * @param {File} originalFile 原始图片文件
-   * @param {string} depthImageUrl 深度图URL
-   */
-  showDepthResult(originalFile, depthImageUrl) {
-    const depthResult = document.getElementById('depthResult');
-    const originalResult = document.getElementById('originalResult');
-    const depthResultImg = document.getElementById('depthResultImg');
-
-    // 显示原始图片
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      originalResult.src = e.target.result;
-    };
-    reader.readAsDataURL(originalFile);
-
-    // 显示深度图
-    depthResultImg.src = depthImageUrl;
-    
-    depthResult.style.display = 'block';
-  }
-
-  /**
-   * 显示手动模式深度图结果
-   */
-  showManualDepthResult() {
-    const depthResult = document.getElementById('depthResult');
-    const originalResult = document.getElementById('originalResult');
-    const depthResultImg = document.getElementById('depthResultImg');
-
-    // 显示原始图片
-    const reader1 = new FileReader();
-    reader1.onload = (e) => {
-      originalResult.src = e.target.result;
-    };
-    reader1.readAsDataURL(this.files.image);
-
-    // 显示深度图
-    const reader2 = new FileReader();
-    reader2.onload = (e) => {
-      depthResultImg.src = e.target.result;
-    };
-    reader2.readAsDataURL(this.files.depth);
-    
-    depthResult.style.display = 'block';
-  }
 
   /**
    * 显示处理结果
@@ -741,12 +693,10 @@ class DepthCutFrontendApp {
     // 隐藏结果区域
     document.getElementById('progressSection').style.display = 'none';
     document.getElementById('resultsSection').style.display = 'none';
-    document.getElementById('depthResult').style.display = 'none';
     document.getElementById('preview3dSection').style.display = 'none';
     
     // 重置设置
     this.setLayers(16);
-    this.switchMode('auto');
     
     // 清理处理器
     if (this.depthCutter) {

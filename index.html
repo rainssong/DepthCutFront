@@ -45,22 +45,6 @@
 
         <!-- 主要内容 -->
         <main class="main">
-            <!-- 功能选择 -->
-            <section class="mode-selection">
-                <h2>选择处理模式</h2>
-                <div class="mode-buttons">
-                    <button id="autoMode" class="mode-btn active" data-mode="auto">
-                        <span class="mode-icon">🤖</span>
-                        <span class="mode-title">自动模式</span>
-                        <span class="mode-desc">AI自动生成深度图并切分</span>
-                    </button>
-                    <button id="manualMode" class="mode-btn" data-mode="manual">
-                        <span class="mode-icon">👤</span>
-                        <span class="mode-title">手动模式</span>
-                        <span class="mode-desc">使用现有深度图进行切分</span>
-                    </button>
-                </div>
-            </section>
 
             <!-- 上传区域 -->
             <section class="upload-section">
@@ -86,15 +70,21 @@
                     </div>
 
                     <!-- 深度图上传（手动模式） -->
-                    <div class="upload-area" id="depthUpload" style="display: none;">
+                    <div class="upload-area" id="depthUpload">
                         <div class="upload-content">
                             <div class="upload-icon">🗺️</div>
                             <h3>上传深度图</h3>
                             <p>灰度图，黑色=远，白色=近</p>
-                            <input type="file" id="depthFile" accept="image/*" hidden>
-                            <button class="upload-btn" onclick="document.getElementById('depthFile').click()">
-                                选择深度图
-                            </button>
+                            <div class="depth-upload-buttons">
+                                <input type="file" id="depthFile" accept="image/*" hidden>
+                                <button class="upload-btn" onclick="document.getElementById('depthFile').click()">
+                                    选择深度图
+                                </button>
+                                <button class="ai-generate-btn" id="aiGenerateBtn">
+                                    <span class="btn-icon">🤖</span>
+                                    <span class="btn-text">AI生成深度图</span>
+                                </button>
+                            </div>
                         </div>
                         <div class="upload-preview" id="depthPreview" style="display: none;">
                             <img id="depthPreviewImg" alt="深度图预览">
@@ -205,20 +195,6 @@
                         </div>
                     </div>
                     
-                    <!-- 深度图预览（自动模式） -->
-                    <div class="depth-preview" id="depthResult" style="display: none;">
-                        <h4>生成的深度图</h4>
-                        <div class="depth-comparison">
-                            <div class="comparison-item">
-                                <img id="originalResult" alt="原始图片">
-                                <span>原始图片</span>
-                            </div>
-                            <div class="comparison-item">
-                                <img id="depthResultImg" alt="深度图">
-                                <span>深度图</span>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- 层级文件列表 -->
                     <div class="layer-files">
