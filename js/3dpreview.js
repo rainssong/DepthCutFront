@@ -116,25 +116,10 @@ class ThreeDPreview {
   }
 
   /**
-   * 设置光照
+   * 设置光照 - 已禁用，使用无光照材质
    */
   setupLights() {
-    // 环境光
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-    this.scene.add(ambientLight);
-
-    // 方向光
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 10, 5);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    this.scene.add(directionalLight);
-
-    // 点光源
-    const pointLight = new THREE.PointLight(0xffffff, 0.5);
-    pointLight.position.set(-10, -10, -5);
-    this.scene.add(pointLight);
+    // 不再添加光照，使用无光照材质显示原始色彩
   }
 
   /**
@@ -156,9 +141,8 @@ class ThreeDPreview {
 
     // 计算布局参数
     const layerCount = results.length;
-    const baseWidth = 4; // 基础宽度
-    const baseHeight = 3; // 基础高度
-    const spacing = baseWidth * this.spacingRatio;
+    const baseScale = 4; // 基础缩放比例
+    const spacing = baseScale * this.spacingRatio;
     const totalDepth = (layerCount - 1) * spacing;
     const startZ = -totalDepth / 2; // 从后往前排列
 
@@ -168,7 +152,7 @@ class ThreeDPreview {
       const z = startZ + i * spacing; // Z轴位置，0号图在最下面（最远处）
       
       try {
-        const mesh = await this.createImagePlane(result, baseWidth, baseHeight, z);
+        const mesh = await this.createImagePlane(result, baseScale, z);
         this.meshes.push(mesh);
         this.scene.add(mesh);
       } catch (error) {
@@ -177,7 +161,7 @@ class ThreeDPreview {
     }
 
     // 调整相机位置以适应所有图片
-    this.adjustCameraView(totalDepth, baseHeight);
+    this.adjustCameraView(totalDepth, baseScale);
     
     console.log(`Displayed ${this.meshes.length} layers in 3D preview`);
   }
@@ -185,12 +169,11 @@ class ThreeDPreview {
   /**
    * 创建图片平面
    * @param {Object} result 切分结果
-   * @param {number} width 平面宽度
-   * @param {number} height 平面高度
+   * @param {number} scale 缩放比例
    * @param {number} z Z坐标
    * @returns {THREE.Mesh} 网格对象
    */
-  async createImagePlane(result, width, height, z) {
+  async createImagePlane(result, scale, z) {
     return new Promise((resolve, reject) => {
       // 创建纹理加载器
       const loader = new THREE.TextureLoader();
@@ -199,11 +182,27 @@ class ThreeDPreview {
       loader.load(
         result.dataUrl,
         (texture) => {
+          // 获取原始图片尺寸
+          const img = texture.image;
+          const aspectRatio = img.width / img.height;
+          
+          // 根据原始宽高比计算平面尺寸
+          let width, height;
+          if (aspectRatio >= 1) {
+            // 横图：以宽度为基准
+            width = scale;
+            height = scale / aspectRatio;
+          } else {
+            // 竖图：以高度为基准
+            height = scale;
+            width = scale * aspectRatio;
+          }
+          
           // 创建几何体
           const geometry = new THREE.PlaneGeometry(width, height);
           
-          // 创建材质
-          const material = new THREE.MeshLambertMaterial({
+          // 创建无光照材质，显示原始色彩
+          const material = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true,
             side: THREE.DoubleSide
@@ -212,14 +211,14 @@ class ThreeDPreview {
           // 创建网格
           const mesh = new THREE.Mesh(geometry, material);
           mesh.position.set(0, 0, z);
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
           
           // 添加用户数据
           mesh.userData = {
             layer: result.layer,
             depthRange: result.depthRange,
-            filename: result.filename
+            filename: result.filename,
+            originalSize: { width: img.width, height: img.height },
+            aspectRatio: aspectRatio
           };
           
           resolve(mesh);
@@ -236,10 +235,10 @@ class ThreeDPreview {
   /**
    * 调整相机视角
    * @param {number} totalDepth 总深度
-   * @param {number} height 高度
+   * @param {number} scale 缩放比例
    */
-  adjustCameraView(totalDepth, height) {
-    const distance = Math.max(totalDepth * 1.2, height * 2, 12);
+  adjustCameraView(totalDepth, scale) {
+    const distance = Math.max(totalDepth * 1.2, scale * 2, 12);
     // 设置相机位置，从侧面观看层叠效果
     this.camera.position.set(distance * 0.8, distance * 0.4, distance * 0.6);
     this.camera.lookAt(0, 0, 0);
@@ -256,8 +255,8 @@ class ThreeDPreview {
     
     if (this.meshes.length > 0) {
       // 重新计算位置
-      const baseWidth = 4;
-      const spacing = baseWidth * this.spacingRatio;
+      const baseScale = 4;
+      const spacing = baseScale * this.spacingRatio;
       const totalDepth = (this.meshes.length - 1) * spacing;
       const startZ = -totalDepth / 2;
       
@@ -268,7 +267,7 @@ class ThreeDPreview {
       });
       
       // 调整相机视角
-      this.adjustCameraView(totalDepth, 3);
+      this.adjustCameraView(totalDepth, baseScale);
     }
   }
 
@@ -374,10 +373,10 @@ class ThreeDPreview {
    */
   resetCamera() {
     if (this.meshes.length > 0) {
-      const baseWidth = 4;
-      const spacing = baseWidth * this.spacingRatio;
+      const baseScale = 4;
+      const spacing = baseScale * this.spacingRatio;
       const totalDepth = (this.meshes.length - 1) * spacing;
-      this.adjustCameraView(totalDepth, 3);
+      this.adjustCameraView(totalDepth, baseScale);
     } else {
       this.camera.position.set(8, 3, 6);
       this.camera.lookAt(0, 0, 0);
