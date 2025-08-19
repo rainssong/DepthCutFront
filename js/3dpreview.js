@@ -12,7 +12,7 @@ class ThreeDPreview {
     this.renderer = null;
     this.controls = null;
     this.meshes = [];
-    this.spacingRatio = 0.50; // 间距/图片宽度比例
+    this.spacingRatio = 0.05; // 间距/图片宽度比例
     this.isInitialized = false;
     
     // 绑定方法
@@ -251,7 +251,7 @@ class ThreeDPreview {
    * @param {number} ratio 间距比例
    */
   updateSpacingRatio(ratio) {
-    this.spacingRatio = Math.max(0.01, Math.min(1.00, ratio));
+    this.spacingRatio = Math.max(0.01, Math.min(0.20, ratio));
     
     if (this.meshes.length > 0) {
       // 重新计算位置
@@ -266,8 +266,7 @@ class ThreeDPreview {
         mesh.position.z = z;
       });
       
-      // 调整相机视角
-      this.adjustCameraView(totalDepth, baseScale);
+      // 不重置相机视角，保持用户当前的观察角度
     }
   }
 

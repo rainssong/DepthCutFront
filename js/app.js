@@ -26,6 +26,7 @@ class DepthCutFrontendApp {
   init() {
     this.loadApiToken();
     this.setupEventListeners();
+    this.initializeDefaults();
     this.updateUI();
     console.log('DepthCut Frontend App initialized');
   }
@@ -744,7 +745,7 @@ class DepthCutFrontendApp {
     document.getElementById('preview3dSection').style.display = 'none';
     
     // 重置设置
-    this.setLayers(8);
+    this.setLayers(16);
     this.switchMode('auto');
     
     // 清理处理器
@@ -859,6 +860,29 @@ class DepthCutFrontendApp {
 
     if (this.threeDPreview) {
       this.threeDPreview.updateSpacingRatio(parseFloat(value));
+    }
+  }
+
+  /**
+   * 初始化默认值
+   */
+  initializeDefaults() {
+    // 设置默认层级16
+    document.getElementById('layerCount').value = 16;
+    this.updateLayerValue(16);
+    
+    // 设置默认冗余2
+    document.getElementById('depthOverlap').value = 2;
+    
+    // 设置默认边框粗细2
+    document.getElementById('borderWidth').value = 2;
+    this.updateBorderValue(2);
+    
+    // 设置默认间距0.05
+    const spacingSlider = document.getElementById('spacingSlider');
+    if (spacingSlider) {
+      spacingSlider.value = 0.05;
+      this.updateSpacingValue(0.05);
     }
   }
 
