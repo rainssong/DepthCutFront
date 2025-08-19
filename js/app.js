@@ -15,6 +15,7 @@ class DepthCutFrontendApp {
     this.depthCutter = null;
     this.currentResults = null;
     this.processingStartTime = null;
+    this.threeDPreview = null;
     
     this.init();
   }
@@ -80,6 +81,21 @@ class DepthCutFrontendApp {
     document.getElementById('processBtn').addEventListener('click', () => {
       this.startProcessing();
     });
+
+    // 3D预览控制
+    const spacingSlider = document.getElementById('spacingSlider');
+    if (spacingSlider) {
+      spacingSlider.addEventListener('input', (e) => {
+        this.updateSpacingValue(e.target.value);
+      });
+    }
+
+    const resetCameraBtn = document.getElementById('resetCameraBtn');
+    if (resetCameraBtn) {
+      resetCameraBtn.addEventListener('click', () => {
+        this.resetCamera();
+      });
+    }
 
     // 模态框关闭
     document.addEventListener('click', (e) => {
@@ -339,15 +355,18 @@ class DepthCutFrontendApp {
   updateLayerValue(value) {
     document.getElementById('layerValue').textContent = value;
     
-    // 更新预设按钮状态
-    document.querySelectorAll('.preset-btn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    
-    // 如果是预设值，高亮对应按钮
-    const presetValues = { 4: 0, 8: 1, 16: 2, 32: 3 };
-    if (presetValues[value] !== undefined) {
-      document.querySelectorAll('.preset-btn')[presetValues[value]].classList.add('active');
+    // 更新预设按钮状态（如果存在的话）
+    const presetBtns = document.querySelectorAll('.preset-btn');
+    if (presetBtns.length > 0) {
+      presetBtns.forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // 如果是预设值，高亮对应按钮
+      const presetValues = { 4: 0, 8: 1, 16: 2, 32: 3 };
+      if (presetValues[value] !== undefined && presetBtns[presetValues[value]]) {
+        presetBtns[presetValues[value]].classList.add('active');
+      }
     }
   }
 
@@ -637,6 +656,9 @@ class DepthCutFrontendApp {
     resultsSection.style.display = 'block';
     resultsSection.classList.add('fade-in');
     resultsSection.scrollIntoView({ behavior: 'smooth' });
+
+    // 显示3D预览
+    this.show3DPreview();
   }
 
   /**
@@ -719,6 +741,7 @@ class DepthCutFrontendApp {
     document.getElementById('progressSection').style.display = 'none';
     document.getElementById('resultsSection').style.display = 'none';
     document.getElementById('depthResult').style.display = 'none';
+    document.getElementById('preview3dSection').style.display = 'none';
     
     // 重置设置
     this.setLayers(8);
@@ -728,6 +751,12 @@ class DepthCutFrontendApp {
     if (this.depthCutter) {
       this.depthCutter.cleanup();
       this.depthCutter = null;
+    }
+
+    // 清理3D预览
+    if (this.threeDPreview) {
+      this.threeDPreview.destroy();
+      this.threeDPreview = null;
     }
     
     // 滚动到顶部
@@ -779,6 +808,67 @@ class DepthCutFrontendApp {
    */
   updateUI() {
     this.updateProcessButton();
+  }
+
+  /**
+   * 显示3D预览
+   */
+  async show3DPreview() {
+    if (!this.currentResults || this.currentResults.length === 0) {
+      console.warn('No results to show in 3D preview');
+      return;
+    }
+
+    try {
+      // 创建3D预览实例
+      if (!this.threeDPreview) {
+        this.threeDPreview = new ThreeDPreview('preview3dViewport');
+      }
+
+      // 显示3D预览区域
+      const preview3dSection = document.getElementById('preview3dSection');
+      preview3dSection.style.display = 'block';
+      preview3dSection.classList.add('fade-in');
+
+      // 初始化并显示结果
+      await this.threeDPreview.init();
+      await this.threeDPreview.showResults(this.currentResults);
+
+      // 隐藏加载提示
+      const loadingElement = document.getElementById('preview3dLoading');
+      if (loadingElement) {
+        loadingElement.style.display = 'none';
+      }
+
+      console.log('3D preview displayed successfully');
+    } catch (error) {
+      console.error('Failed to show 3D preview:', error);
+      this.showError(`3D预览加载失败: ${error.message}`);
+    }
+  }
+
+  /**
+   * 更新间距值
+   * @param {string} value 间距值
+   */
+  updateSpacingValue(value) {
+    const spacingValue = document.getElementById('spacingValue');
+    if (spacingValue) {
+      spacingValue.textContent = parseFloat(value).toFixed(2);
+    }
+
+    if (this.threeDPreview) {
+      this.threeDPreview.updateSpacingRatio(parseFloat(value));
+    }
+  }
+
+  /**
+   * 重置相机视角
+   */
+  resetCamera() {
+    if (this.threeDPreview) {
+      this.threeDPreview.resetCamera();
+    }
   }
 }
 

@@ -114,12 +114,12 @@
                     <div class="setting-item">
                         <label for="layerCount">层级数量</label>
                         <div class="slider-container">
-                            <input type="range" id="layerCount" min="1" max="32" value="8" class="slider">
-                            <span class="slider-value" id="layerValue">8</span>
+                            <input type="range" id="layerCount" min="1" max="40" value="16" class="slider">
+                            <span class="slider-value" id="layerValue">16</span>
                         </div>
                         <div class="slider-labels">
                             <span>1层</span>
-                            <span>32层</span>
+                            <span>40层</span>
                         </div>
                     </div>
                     <div class="setting-item">
@@ -144,15 +144,6 @@
                         </div>
                         <div class="setting-help">
                             <span>为导出图片添加黑色边框（向外扩展）</span>
-                        </div>
-                    </div>
-                    <div class="setting-item">
-                        <label>预设配置</label>
-                        <div class="preset-buttons">
-                            <button class="preset-btn" onclick="setLayers(4)">快速 (4层)</button>
-                            <button class="preset-btn active" onclick="setLayers(8)">标准 (8层)</button>
-                            <button class="preset-btn" onclick="setLayers(16)">精细 (16层)</button>
-                            <button class="preset-btn" onclick="setLayers(32)">极致 (32层)</button>
                         </div>
                     </div>
                 </div>
@@ -247,6 +238,38 @@
                             <span class="btn-icon">🔄</span>
                             重新开始
                         </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3D预览区域 -->
+            <section class="preview-3d-section" id="preview3dSection" style="display: none;">
+                <div class="preview-3d-container">
+                    <div class="preview-3d-header">
+                        <h3>3D预览</h3>
+                        <div class="preview-3d-controls">
+                            <div class="spacing-control">
+                                <label for="spacingSlider">间距比例</label>
+                                <div class="slider-container">
+                                    <input type="range" id="spacingSlider" min="0.01" max="1.00" step="0.01" value="0.50" class="slider">
+                                    <span class="slider-value" id="spacingValue">0.50</span>
+                                </div>
+                            </div>
+                            <button class="reset-camera-btn" id="resetCameraBtn">
+                                <span class="btn-icon">🎯</span>
+                                重置视角
+                            </button>
+                        </div>
+                    </div>
+                    <div class="preview-3d-viewport" id="preview3dViewport">
+                        <!-- 3D场景将在这里渲染 -->
+                        <div class="preview-3d-loading" id="preview3dLoading">
+                            <div class="loading-spinner"></div>
+                            <p>正在加载3D预览...</p>
+                        </div>
+                    </div>
+                    <div class="preview-3d-info">
+                        <p>💡 使用鼠标拖拽旋转视角，滚轮缩放，右键拖拽平移</p>
                     </div>
                 </div>
             </section>
@@ -380,6 +403,7 @@
     <script src="js/image-processor.js"></script>
     <script src="js/depth-generator.js"></script>
     <script src="js/depth-cutter.js"></script>
+    <script src="js/3dpreview.js"></script>
     <script src="js/app.js"></script>
     
     <!-- 可选：JSZip库用于批量下载 -->
