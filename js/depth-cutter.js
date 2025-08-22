@@ -28,10 +28,7 @@ class BrowserDepthCutter {
       let minDepth = Math.round(stepSize * i * 10) / 10;
       let maxDepth = Math.round(stepSize * (i + 1) * 10) / 10;
       
-      // 应用深度冗余
-      if (i > 0) {
-        minDepth = Math.max(0, minDepth - depthOverlap);
-      }
+      // 应用深度冗余 - 由底部向上冗余（只向最大值方向扩展）
       if (i < layerCount - 1) {
         maxDepth = Math.min(100, maxDepth + depthOverlap);
       }
