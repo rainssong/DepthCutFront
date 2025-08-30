@@ -708,6 +708,15 @@ class DepthCutFrontendApp {
     
     // 重置设置
     this.setLayers(16);
+    document.getElementById('depthOverlap').value = 100;
+    document.getElementById('borderWidth').value = 4;
+    this.updateBorderValue(4);
+    
+    const spacingSlider = document.getElementById('spacingSlider');
+    if (spacingSlider) {
+      spacingSlider.value = 0.02;
+      this.updateSpacingValue(0.02);
+    }
     
     // 清理处理器
     if (this.depthCutter) {
@@ -833,18 +842,18 @@ class DepthCutFrontendApp {
     document.getElementById('layerCount').value = 16;
     this.updateLayerValue(16);
     
-    // 设置默认冗余2
-    document.getElementById('depthOverlap').value = 2;
+    // 设置默认冗余100
+    document.getElementById('depthOverlap').value = 100;
     
-    // 设置默认边框粗细2
-    document.getElementById('borderWidth').value = 2;
-    this.updateBorderValue(2);
+    // 设置默认边框粗细4
+    document.getElementById('borderWidth').value = 4;
+    this.updateBorderValue(4);
     
-    // 设置默认间距0.05
+    // 设置默认间距0.02
     const spacingSlider = document.getElementById('spacingSlider');
     if (spacingSlider) {
-      spacingSlider.value = 0.05;
-      this.updateSpacingValue(0.05);
+      spacingSlider.value = 0.02;
+      this.updateSpacingValue(0.02);
     }
   }
 
@@ -896,8 +905,8 @@ class DepthCutFrontendApp {
       return this.layerVisibility[index];
     });
 
-    // 更新3D预览
-    this.threeDPreview.showResults(visibleResults);
+    // 更新3D预览，不重置摄像头
+    this.threeDPreview.updateResults(visibleResults);
   }
 
   /**

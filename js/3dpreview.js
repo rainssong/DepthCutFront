@@ -167,6 +167,48 @@ class ThreeDPreview {
   }
 
   /**
+   * 更新显示结果，不重置摄像头位置
+   * @param {Array} results 切分结果数组
+   */
+  async updateResults(results) {
+    if (!this.isInitialized) {
+      await this.init();
+    }
+
+    // 清除之前的网格
+    this.clearMeshes();
+
+    if (!results || results.length === 0) {
+      console.warn('No results to display');
+      return;
+    }
+
+    // 计算布局参数
+    const layerCount = results.length;
+    const baseScale = 4; // 基础缩放比例
+    const spacing = baseScale * this.spacingRatio;
+    const totalDepth = (layerCount - 1) * spacing;
+    const startZ = -totalDepth / 2; // 从后往前排列
+
+    // 为每个结果创建平面
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      const z = startZ + i * spacing; // Z轴位置，0号图在最下面（最远处）
+      
+      try {
+        const mesh = await this.createImagePlane(result, baseScale, z);
+        this.meshes.push(mesh);
+        this.scene.add(mesh);
+      } catch (error) {
+        console.error(`Failed to create plane for layer ${result.layer}:`, error);
+      }
+    }
+
+    // 不调整摄像头位置，保持当前视角
+    console.log(`Updated ${this.meshes.length} layers in 3D preview without camera reset`);
+  }
+
+  /**
    * 创建图片平面
    * @param {Object} result 切分结果
    * @param {number} scale 缩放比例
