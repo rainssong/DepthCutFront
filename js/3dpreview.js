@@ -224,6 +224,13 @@ class ThreeDPreview {
       loader.load(
         result.dataUrl,
         (texture) => {
+          // 设置纹理过滤方式，避免模糊和描边
+          texture.magFilter = THREE.NearestFilter;
+          texture.minFilter = THREE.NearestFilter;
+          texture.wrapS = THREE.ClampToEdgeWrap;
+          texture.wrapT = THREE.ClampToEdgeWrap;
+          texture.generateMipmaps = false;
+          
           // 获取原始图片尺寸
           const img = texture.image;
           const aspectRatio = img.width / img.height;
@@ -243,11 +250,13 @@ class ThreeDPreview {
           // 创建几何体
           const geometry = new THREE.PlaneGeometry(width, height);
           
-          // 创建无光照材质，显示原始色彩
+          // 创建无光照材质，显示原始色彩，优化透明度处理
           const material = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true,
-            side: THREE.DoubleSide
+            side: THREE.DoubleSide,
+            alphaTest: 0.01, // 设置alpha测试阈值，避免透明像素的描边效果
+            depthWrite: false // 禁用深度写入，避免层级间的视觉干扰
           });
           
           // 创建网格
