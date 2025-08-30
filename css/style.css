@@ -746,11 +746,26 @@ section h2 {
   text-align: center;
   border: 1px solid var(--border);
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .file-item:hover {
   border-color: var(--primary-color);
   transform: translateY(-2px);
+}
+
+.file-checkbox-container {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.layer-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
 }
 
 .file-preview {

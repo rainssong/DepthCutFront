@@ -17,6 +17,7 @@ class DepthCutFrontendApp {
     this.processingStartTime = null;
     this.threeDPreview = null;
     this.isGeneratingDepth = false; // AI生成深度图状态
+    this.layerVisibility = []; // 层级可见性状态数组
     
     this.init();
   }
@@ -598,12 +599,18 @@ class DepthCutFrontendApp {
     resultLayers.textContent = this.currentResults.length;
     resultTime.textContent = `${processingTime}`;
 
+    // 初始化层级可见性状态（默认全部选中）
+    this.layerVisibility = new Array(this.currentResults.length).fill(true);
+
     // 生成文件列表
     filesGrid.innerHTML = '';
     this.currentResults.forEach((result, index) => {
       const fileItem = this.createFileItem(result, index);
       filesGrid.appendChild(fileItem);
     });
+
+    // 添加checkbox事件监听器
+    this.setupLayerCheckboxListeners();
 
     // 显示结果区域
     resultsSection.style.display = 'block';
@@ -625,6 +632,9 @@ class DepthCutFrontendApp {
     item.className = 'file-item';
     
     item.innerHTML = `
+      <div class="file-checkbox-container">
+        <input type="checkbox" id="layer-checkbox-${index}" class="layer-checkbox" checked data-layer-index="${index}">
+      </div>
       <div class="file-preview">
         <img src="${result.previewDataUrl}" alt="Layer ${result.layer}" style="width: 100%; height: 100%; object-fit: contain; border-radius: var(--radius);">
       </div>
@@ -683,6 +693,7 @@ class DepthCutFrontendApp {
     // 重置文件
     this.files = { image: null, depth: null };
     this.currentResults = null;
+    this.layerVisibility = []; // 重置层级可见性状态
     
     // 重置UI
     document.getElementById('imagePreview').style.display = 'none';
@@ -781,9 +792,10 @@ class DepthCutFrontendApp {
       preview3dSection.style.display = 'block';
       preview3dSection.classList.add('fade-in');
 
-      // 初始化并显示结果
+      // 初始化并显示结果（使用可见的结果）
       await this.threeDPreview.init();
-      await this.threeDPreview.showResults(this.currentResults);
+      const visibleResults = this.getVisibleResults();
+      await this.threeDPreview.showResults(visibleResults);
 
       // 隐藏加载提示
       const loadingElement = document.getElementById('preview3dLoading');
@@ -843,6 +855,63 @@ class DepthCutFrontendApp {
     if (this.threeDPreview) {
       this.threeDPreview.resetCamera();
     }
+  }
+
+  /**
+   * 设置层级checkbox事件监听器
+   */
+  setupLayerCheckboxListeners() {
+    const checkboxes = document.querySelectorAll('.layer-checkbox');
+    checkboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const layerIndex = parseInt(e.target.dataset.layerIndex);
+        this.handleLayerVisibilityChange(layerIndex, e.target.checked);
+      });
+    });
+  }
+
+  /**
+   * 处理层级可见性变化
+   * @param {number} layerIndex 层级索引
+   * @param {boolean} isVisible 是否可见
+   */
+  handleLayerVisibilityChange(layerIndex, isVisible) {
+    // 更新可见性状态
+    this.layerVisibility[layerIndex] = isVisible;
+    
+    // 更新3D预览
+    this.update3DPreview();
+  }
+
+  /**
+   * 更新3D预览，只显示选中的层级
+   */
+  update3DPreview() {
+    if (!this.threeDPreview || !this.currentResults) {
+      return;
+    }
+
+    // 过滤出可见的结果
+    const visibleResults = this.currentResults.filter((result, index) => {
+      return this.layerVisibility[index];
+    });
+
+    // 更新3D预览
+    this.threeDPreview.showResults(visibleResults);
+  }
+
+  /**
+   * 获取可见的层级结果
+   * @returns {Array} 可见的层级结果数组
+   */
+  getVisibleResults() {
+    if (!this.currentResults || !this.layerVisibility) {
+      return this.currentResults || [];
+    }
+    
+    return this.currentResults.filter((result, index) => {
+      return this.layerVisibility[index];
+    });
   }
 }
 
