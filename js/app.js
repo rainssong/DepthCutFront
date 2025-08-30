@@ -682,7 +682,47 @@ class DepthCutFrontendApp {
       
       const downloadBtn = document.getElementById('downloadAllBtn');
       downloadBtn.disabled = false;
-      downloadBtn.innerHTML = '<span class="btn-icon">📦</span>下载所有文件';
+      downloadBtn.innerHTML = '<span class="btn-icon">📦</span>下载勾选文件';
+    }
+  }
+
+  /**
+   * 下载勾选的文件
+   */
+  async downloadSelectedFiles() {
+    try {
+      const downloadBtn = document.getElementById('downloadAllBtn');
+      const originalText = downloadBtn.innerHTML;
+      downloadBtn.disabled = true;
+      downloadBtn.innerHTML = '<span class="btn-icon">⏳</span>正在打包...';
+
+      // 获取勾选的层级索引
+      const selectedIndices = [];
+      this.layerVisibility.forEach((isVisible, index) => {
+        if (isVisible) {
+          selectedIndices.push(index);
+        }
+      });
+
+      if (selectedIndices.length === 0) {
+        this.showError('请至少勾选一个文件');
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = originalText;
+        return;
+      }
+
+      // 下载选中的文件
+      await this.depthCutter.downloadSelectedAsZip(selectedIndices);
+
+      downloadBtn.disabled = false;
+      downloadBtn.innerHTML = originalText;
+    } catch (error) {
+      console.error('Selected download failed:', error);
+      this.showError(`下载勾选文件失败: ${error.message}`);
+      
+      const downloadBtn = document.getElementById('downloadAllBtn');
+      downloadBtn.disabled = false;
+      downloadBtn.innerHTML = '<span class="btn-icon">📦</span>下载勾选文件';
     }
   }
 
@@ -959,6 +999,10 @@ function closeModal(modalId) {
 
 function downloadAllFiles() {
   app.downloadAllFiles();
+}
+
+function downloadSelectedFiles() {
+  app.downloadSelectedFiles();
 }
 
 // 初始化应用

@@ -199,6 +199,52 @@ class BrowserDepthCutter {
   }
 
   /**
+   * 下载选中的文件（打包为ZIP）
+   * @param {Array<number>} selectedIndices 选中的层级索引数组
+   * @returns {Promise<Blob>} ZIP文件Blob
+   */
+  async downloadSelectedAsZip(selectedIndices) {
+    // 注意：这里需要引入JSZip库
+    if (typeof JSZip === 'undefined') {
+      throw new Error('需要JSZip库支持批量下载功能');
+    }
+    
+    if (!selectedIndices || selectedIndices.length === 0) {
+      throw new Error('请选择要下载的文件');
+    }
+    
+    const zip = new JSZip();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    
+    // 添加选中的文件到ZIP
+    for (const index of selectedIndices) {
+      if (index >= 0 && index < this.results.length) {
+        const result = this.results[index];
+        zip.file(result.filename, result.blob);
+      }
+    }
+    
+    // 生成ZIP文件
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    
+    // 下载ZIP文件
+    const zipFilename = `DepthCut_Selected_${timestamp}.zip`;
+    const url = URL.createObjectURL(zipBlob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = zipFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    URL.revokeObjectURL(url);
+    
+    console.log(`✓ 选中文件下载完成: ${zipFilename} (${selectedIndices.length} 个文件)`);
+    return zipBlob;
+  }
+
+  /**
    * 获取处理结果统计
    * @returns {Object} 统计信息
    */
