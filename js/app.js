@@ -754,8 +754,8 @@ class DepthCutFrontendApp {
     
     const spacingSlider = document.getElementById('spacingSlider');
     if (spacingSlider) {
-      spacingSlider.value = 0.02;
-      this.updateSpacingValue(0.02);
+      spacingSlider.value = 0.025;
+      this.updateSpacingValue(0.025);
     }
     
     // 清理处理器
@@ -866,7 +866,7 @@ class DepthCutFrontendApp {
   updateSpacingValue(value) {
     const spacingValue = document.getElementById('spacingValue');
     if (spacingValue) {
-      spacingValue.textContent = parseFloat(value).toFixed(2);
+      spacingValue.textContent = parseFloat(value).toFixed(3);
     }
 
     if (this.threeDPreview) {
@@ -892,8 +892,8 @@ class DepthCutFrontendApp {
     // 设置默认间距0.02
     const spacingSlider = document.getElementById('spacingSlider');
     if (spacingSlider) {
-      spacingSlider.value = 0.02;
-      this.updateSpacingValue(0.02);
+      spacingSlider.value = 0.025;
+      this.updateSpacingValue(0.025);
     }
   }
 

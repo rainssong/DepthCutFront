@@ -12,7 +12,7 @@ class ThreeDPreview {
     this.renderer = null;
     this.controls = null;
     this.meshes = [];
-    this.spacingRatio = 0.02; // 间距/图片宽度比例
+    this.spacingRatio = 0.025; // 间距/图片宽度比例
     this.isInitialized = false;
     
     // 绑定方法
@@ -302,7 +302,7 @@ class ThreeDPreview {
    * @param {number} ratio 间距比例
    */
   updateSpacingRatio(ratio) {
-    this.spacingRatio = Math.max(0.01, Math.min(0.20, ratio));
+    this.spacingRatio = Math.max(0.005, Math.min(0.05, ratio));
     
     if (this.meshes.length > 0) {
       // 重新计算位置
